@@ -1,0 +1,90 @@
+services:
+  # MySQL Database
+  db:
+    image: mysql:5.7
+    container_name: wordpress-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - wordpress-network
+    ports:
+      - "3306:3306"
+    command: 
+      - '--default-authentication-plugin=mysql_native_password'
+      - '--sql_mode='
+      - '--general-log=1'
+      - '--general-log-file=/var/lib/mysql/general.log'
+
+  # WordPress Application
+  wordpress:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: wordpress-app
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_NAME: ${DB_NAME}
+      WORDPRESS_DB_USER: ${DB_USER}
+      WORDPRESS_DB_PASSWORD: ${DB_PASSWORD}
+      WORDPRESS_DEBUG: 'true'
+      WORDPRESS_CONFIG_EXTRA: |
+        define('WP_DEBUG', true);
+        define('WP_DEBUG_LOG', true);
+        define('WP_DEBUG_DISPLAY', true);
+        define('SCRIPT_DEBUG', true);
+        define('SAVEQUERIES', true);
+        define('CONCATENATE_SCRIPTS', false);
+        /* Disable automatic updates */
+        define('AUTOMATIC_UPDATER_DISABLED', true);
+        define('WP_AUTO_UPDATE_CORE', false);
+        define('DISALLOW_FILE_MODS', false);
+        /* Allow direct filesystem access */
+        define('FS_METHOD', 'direct');
+        /* Enable XML-RPC (often exploited) */
+        ## add_filter('xmlrpc_enabled', '__return_true');
+    volumes:
+      - wordpress_data:/var/www/html
+      - ./uploads.ini:/usr/local/etc/php/conf.d/uploads.ini
+      - ./logs:/var/log/apache2
+    ports:
+      - "0.0.0.0:8080:80"
+    networks:
+      - wordpress-network
+
+  # PHPMyAdmin for database management
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: wordpress-phpmyadmin
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      PMA_ARBITRARY: 1
+    ports:
+      - "8081:80"
+    networks:
+      - wordpress-network
+
+# Persistent volumes
+volumes:
+  db_data:
+    driver: local
+  wordpress_data:
+    driver: local
+
+# Network configuration
+networks:
+  wordpress-network:
+    driver: bridge
