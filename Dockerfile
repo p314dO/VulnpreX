@@ -54,7 +54,7 @@ WORKDIR /tmp
 # WP File Manager 6.0 (CVE-2020-25213 - RCE)
 RUN wget -q https://downloads.wordpress.org/plugin/wp-file-manager.6.0.zip && \
     unzip -q wp-file-manager.6.0.zip -d /var/www/html/wp-content/plugins/ && \
-    unzip -q /var/www/html/wp-content/plugins/wp-file-manager/wp-file-manager-6.O.zip -d /var/www/html/wp-content/plugins/ && \
+    unzip -q /var/www/html/wp-content/plugins/wp-file-manager/wp-file-manager-6.O.zip -d /var/www/html/wp-content/plugins/wp-file-manager && \
     rm wp-file-manager.6.0.zip
 
 # Mail Masta (LFI vulnerability)
